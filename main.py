@@ -23,8 +23,15 @@ class PixelMap:
 
         self.draw_map()
 
+        self.treasure_position = None
+        self.treasure_lock = threading.Lock()
+        self.spawn_treasure()
+
         self.human_player1 = [rnd.randint(3, self.width-4), rnd.randint(3, self.height-4)]
         self.human_player2 = [rnd.randint(3, self.width-4), rnd.randint(3, self.height-4)]
+
+        self.human_player1_picking = False
+        self.human_player2_picking = False
 
         self.move_player_thread1 = threading.Thread(target=self.start_press_listener1)
         self.move_player_thread2 = threading.Thread(target=self.start_press_listener2)
@@ -33,9 +40,9 @@ class PixelMap:
         self.move_player(self.human_player1[0], self.human_player1[1], -1)
         self.move_player(self.human_player2[0], self.human_player2[1], -1)
 
-        self.ai_player = [rnd.randint(3, self.width-4), rnd.randint(3, self.height-4)]
-        self.move_ai_thread = threading.Thread(target=self.move_ai)
-        self.move_ai_thread.start()
+        # self.ai_player = [rnd.randint(3, self.width-4), rnd.randint(3, self.height-4)]
+        # self.move_ai_thread = threading.Thread(target=self.move_ai)
+        # self.move_ai_thread.start()
 
     def draw_map(self):
         for i in range(self.width):
@@ -54,17 +61,50 @@ class PixelMap:
                 )
                 self.position_locks[f"{i}_{j}"] = threading.Lock()
 
+    def spawn_treasure(self):
+            if self.treasure_position:
+                x, y = self.treasure_position
+                self.canvas.create_rectangle(
+                    x*self.pixel_size,
+                    y*self.pixel_size,
+                    (x+1)*self.pixel_size,
+                    (y+1)*self.pixel_size,
+                    fill="grey"
+                )
+            while True:
+                x = rnd.randint(1, self.width-1)
+                y = rnd.randint(1, self.height-1)
+                new_position = f"{x}_{y}"
+                if self.map[x][y] == 'F' and new_position not in self.players:
+                    break
+
+            self.treasure_position = [x, y]
+            self.canvas.create_rectangle(
+                x*self.pixel_size,
+                y*self.pixel_size,
+                (x+1)*self.pixel_size,
+                (y+1)*self.pixel_size,
+                fill="yellow"
+            )
+
     def move_player(self, x, y, direction):
         new_position = [x, y]
-        if direction != -1:
-            if direction == 0 and y > 3:
-                new_position[1] -= 1
-            elif direction == 1 and x < self.width-3:
-                new_position[0] += 1
-            elif direction == 2 and y < self.height-4:
-                new_position[1] += 1
-            elif direction == 3 and x > 2:
-                new_position[0] -= 1
+        if direction == -1:
+            return [x, y]
+
+        if direction == 0 and y > 1:
+            new_position[1] -= 1
+        elif direction == 1 and x < self.width-2:
+            new_position[0] += 1
+        elif direction == 2 and y < self.height-2:
+            new_position[1] += 1
+        elif direction == 3 and x > 1:
+            new_position[0] -= 1
+
+        if self.treasure_position[0] == new_position[0] and self.treasure_position[1] == new_position[1]:
+            return [x, y]
+        if self.treasure_position[0] == new_position[0] and self.treasure_position[1] == new_position[1]:
+            return [x, y]
 
         target_position = f"{new_position[0]}_{new_position[1]}"
         
@@ -98,6 +138,8 @@ class PixelMap:
         return [x, y]
 
     def on_press1(self, event):
+        if self.human_player1_picking:
+            return
         try:
             direction = -1
             if event.keysym == 'Up':
@@ -108,11 +150,15 @@ class PixelMap:
                 direction = 2
             elif event.keysym == 'Left':
                 direction = 3
+            elif event.keysym == 'space' and not self.human_player2_picking:
+                self.attempt_pickup_treasure(self.human_player1, 1)
             self.human_player1 = self.move_player(self.human_player1[0], self.human_player1[1], direction)
         except AttributeError:
             pass
 
     def on_press2(self, event):
+        if self.human_player2_picking:
+            return
         try:
             direction = -1
             if event.keysym == 'w':
@@ -123,6 +169,8 @@ class PixelMap:
                 direction = 2
             elif event.keysym == 'a':
                 direction = 3
+            elif event.keysym == 'Return' and not self.human_player1_picking:
+                self.attempt_pickup_treasure(self.human_player2, 2)
             self.human_player2 = self.move_player(self.human_player2[0], self.human_player2[1], direction)
         except AttributeError:
             pass
@@ -132,13 +180,36 @@ class PixelMap:
         self.master.bind("<Down>", self.on_press1)
         self.master.bind("<Left>", self.on_press1)
         self.master.bind("<Right>", self.on_press1)
+        self.master.bind("<space>", self.on_press1)
 
     def start_press_listener2(self):
         self.master.bind("<w>", self.on_press2)
         self.master.bind("<s>", self.on_press2)
         self.master.bind("<a>", self.on_press2)
         self.master.bind("<d>", self.on_press2)
+        self.master.bind("<Return>", self.on_press2)
 
+    def attempt_pickup_treasure(self, player_position, player_id):
+        with self.treasure_lock:
+            if self.treasure_position:
+                tx, ty = self.treasure_position
+                px, py = player_position
+                if abs(tx - px) <= 1 and abs(ty - py) <= 1:
+                    if player_id == 1:
+                        self.human_player1_picking = True
+                    elif player_id == 2:
+                        self.human_player2_picking = True
+                    threading.Thread(target=self.pickup_treasure, args=(player_id,)).start()
+
+    def pickup_treasure(self, player_id):
+        with self.treasure_lock:
+            time.sleep(0.5)
+            if player_id == 1:
+                self.human_player1_picking = False
+            elif player_id == 2:
+                self.human_player2_picking = False
+            self.spawn_treasure()
+    
     def move_ai(self):
         while self.isRunning:
             direction = rnd.randint(0, 3)
@@ -149,7 +220,7 @@ class PixelMap:
         self.isRunning = False
         self.move_player_thread1.join()
         self.move_player_thread2.join()
-        self.move_ai_thread.join()
+        #self.move_ai_thread.join()
 
 def read_map(filename):
     try:
@@ -173,7 +244,7 @@ def main():
     root.title("Pixel Map")
     map = read_map("base_map.txt")
     if map is not None:
-        pixel_map = PixelMap(master=root, height=len(map), width=len(map[0]), pixel_size=6, map=map)
+        pixel_map = PixelMap(master=root, height=len(map), width=len(map[0]), pixel_size=16, map=map)
         root.protocol("WM_DELETE_WINDOW", lambda: on_closing(pixel_map))
         root.mainloop()
 
