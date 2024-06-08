@@ -36,6 +36,12 @@ class PixelMap:
         self.player1_cooldown = False
         self.player2_cooldown = False
 
+        self.player1_score = 0
+        self.player2_score = 0
+
+        self.score_label = tk.Label(master, text=f"Player 1: {self.player1_score}  Player 2: {self.player2_score}")
+        self.score_label.pack()
+
         self.move_player_thread1 = threading.Thread(target=self.start_press_listener1)
         self.move_player_thread2 = threading.Thread(target=self.start_press_listener2)
         self.move_player_thread1.start()
@@ -101,7 +107,7 @@ class PixelMap:
         elif direction == 3 and x > 1:
             new_position[0] -= 1
 
-        if self.treasure_position[0] == new_position[0] and self.treasure_position[1] == new_position[1]:
+        if self.treasure_position and self.treasure_position[0] == new_position[0] and self.treasure_position[1] == new_position[1]:
             return [x, y]
 
         target_position = f"{new_position[0]}_{new_position[1]}"
@@ -119,11 +125,14 @@ class PixelMap:
                             (y+1)*self.pixel_size,
                             fill="grey"
                         )
-                        color = "green"
                         if [x, y] == self.human_player1:
                             color = "red"
+                            self.human_player1 = new_position
                         elif [x, y] == self.human_player2:
                             color = "blue"
+                            self.human_player2 = new_position
+                        else:
+                            color = "green"
                         self.canvas.create_rectangle(
                             new_position[0]*self.pixel_size,
                             new_position[1]*self.pixel_size,
@@ -144,6 +153,9 @@ class PixelMap:
             fill=color
         )
         self.players.add(f"{x}_{y}")
+
+    def update_score(self):
+        self.score_label.config(text=f"Player 1: {self.player1_score}  Player 2: {self.player2_score}")
 
     def on_press1(self, event):
         if self.human_player1_picking or self.player1_cooldown:
@@ -206,21 +218,37 @@ class PixelMap:
                     if player_id == 1:
                         self.human_player1_picking = True
                         self.player1_cooldown = True
+                        self.player1_score += 1
                     elif player_id == 2:
                         self.human_player2_picking = True
                         self.player2_cooldown = True
+                        self.player2_score += 1
+                    self.update_score()
                     threading.Thread(target=self.pickup_treasure, args=(player_id,)).start()
 
     def pickup_treasure(self, player_id):
         with self.treasure_lock:
-            time.sleep(3)  # 3 seconds cooldown
-            if player_id == 1:
-                self.human_player1_picking = False
-                self.player1_cooldown = False
-            elif player_id == 2:
-                self.human_player2_picking = False
-                self.player2_cooldown = False
-            self.spawn_treasure()
+            self.remove_treasure()
+        time.sleep(3)  # 3 seconds cooldown
+        if player_id == 1:
+            self.human_player1_picking = False
+            self.player1_cooldown = False
+        elif player_id == 2:
+            self.human_player2_picking = False
+            self.player2_cooldown = False
+        self.spawn_treasure()
+
+    def remove_treasure(self):
+        if self.treasure_position:
+            x, y = self.treasure_position
+            self.canvas.create_rectangle(
+                x*self.pixel_size,
+                y*self.pixel_size,
+                (x+1)*self.pixel_size,
+                (y+1)*self.pixel_size,
+                fill="grey"
+            )
+            self.treasure_position = None
 
     def close(self):
         self.isRunning = False
