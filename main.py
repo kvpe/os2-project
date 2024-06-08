@@ -39,8 +39,14 @@ class PixelMap:
         self.player1_score = 0
         self.player2_score = 0
 
-        self.score_label = tk.Label(master, text=f"Player 1: {self.player1_score}  Player 2: {self.player2_score}")
-        self.score_label.pack()
+        self.score_frame = tk.Frame(master)
+        self.score_frame.pack()
+        
+        self.player1_label = tk.Label(self.score_frame, text=f"Player 1: {self.player1_score}", fg="red", font=('Helvetica', 12))
+        self.player1_label.pack(side=tk.LEFT)
+        
+        self.player2_label = tk.Label(self.score_frame, text=f"Player 2: {self.player2_score}", fg="blue", font=('Helvetica', 12))
+        self.player2_label.pack(side=tk.LEFT)
 
         self.move_player_thread1 = threading.Thread(target=self.start_press_listener1)
         self.move_player_thread2 = threading.Thread(target=self.start_press_listener2)
@@ -155,7 +161,8 @@ class PixelMap:
         self.players.add(f"{x}_{y}")
 
     def update_score(self):
-        self.score_label.config(text=f"Player 1: {self.player1_score}  Player 2: {self.player2_score}")
+        self.player1_label.config(text=f"Player 1: {self.player1_score}")
+        self.player2_label.config(text=f"Player 2: {self.player2_score}")
 
     def on_press1(self, event):
         if self.human_player1_picking or self.player1_cooldown:
