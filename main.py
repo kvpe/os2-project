@@ -33,6 +33,9 @@ class PixelMap:
         self.human_player1_picking = False
         self.human_player2_picking = False
 
+        self.player1_cooldown = False
+        self.player2_cooldown = False
+
         self.move_player_thread1 = threading.Thread(target=self.start_press_listener1)
         self.move_player_thread2 = threading.Thread(target=self.start_press_listener2)
         self.move_player_thread1.start()
@@ -143,7 +146,7 @@ class PixelMap:
         self.players.add(f"{x}_{y}")
 
     def on_press1(self, event):
-        if self.human_player1_picking:
+        if self.human_player1_picking or self.player1_cooldown:
             return
         try:
             direction = -1
@@ -162,7 +165,7 @@ class PixelMap:
             pass
 
     def on_press2(self, event):
-        if self.human_player2_picking:
+        if self.human_player2_picking or self.player2_cooldown:
             return
         try:
             direction = -1
@@ -202,17 +205,21 @@ class PixelMap:
                 if abs(tx - px) <= 1 and abs(ty - py) <= 1:
                     if player_id == 1:
                         self.human_player1_picking = True
+                        self.player1_cooldown = True
                     elif player_id == 2:
                         self.human_player2_picking = True
+                        self.player2_cooldown = True
                     threading.Thread(target=self.pickup_treasure, args=(player_id,)).start()
 
     def pickup_treasure(self, player_id):
         with self.treasure_lock:
-            time.sleep(0.5)
+            time.sleep(3)  # 3 seconds cooldown
             if player_id == 1:
                 self.human_player1_picking = False
+                self.player1_cooldown = False
             elif player_id == 2:
                 self.human_player2_picking = False
+                self.player2_cooldown = False
             self.spawn_treasure()
 
     def close(self):
