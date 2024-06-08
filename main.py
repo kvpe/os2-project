@@ -33,9 +33,6 @@ class PixelMap:
         self.human_player1_picking = False
         self.human_player2_picking = False
 
-        self.player1_cooldown = False
-        self.player2_cooldown = False
-
         self.player1_score = 0
         self.player2_score = 0
 
@@ -165,7 +162,7 @@ class PixelMap:
         self.player2_label.config(text=f"Player 2: {self.player2_score}")
 
     def on_press1(self, event):
-        if self.human_player1_picking or self.player1_cooldown:
+        if self.human_player1_picking:
             return
         try:
             direction = -1
@@ -184,7 +181,7 @@ class PixelMap:
             pass
 
     def on_press2(self, event):
-        if self.human_player2_picking or self.player2_cooldown:
+        if self.human_player2_picking:
             return
         try:
             direction = -1
@@ -224,38 +221,23 @@ class PixelMap:
                 if abs(tx - px) <= 1 and abs(ty - py) <= 1:
                     if player_id == 1:
                         self.human_player1_picking = True
-                        self.player1_cooldown = True
                         self.player1_score += 1
                     elif player_id == 2:
                         self.human_player2_picking = True
-                        self.player2_cooldown = True
                         self.player2_score += 1
                     self.update_score()
                     threading.Thread(target=self.pickup_treasure, args=(player_id,)).start()
 
     def pickup_treasure(self, player_id):
         with self.treasure_lock:
-            self.remove_treasure()
-        time.sleep(3)  # 3 seconds cooldown
-        if player_id == 1:
-            self.human_player1_picking = False
-            self.player1_cooldown = False
-        elif player_id == 2:
-            self.human_player2_picking = False
-            self.player2_cooldown = False
-        self.spawn_treasure()
+            time.sleep(3)  # 3 seconds cooldown
+            if player_id == 1:
+                self.human_player1_picking = False
+            elif player_id == 2:
+                self.human_player2_picking = False
+            self.spawn_treasure()
 
-    def remove_treasure(self):
-        if self.treasure_position:
-            x, y = self.treasure_position
-            self.canvas.create_rectangle(
-                x*self.pixel_size,
-                y*self.pixel_size,
-                (x+1)*self.pixel_size,
-                (y+1)*self.pixel_size,
-                fill="grey"
-            )
-            self.treasure_position = None
+    
 
     def close(self):
         self.isRunning = False
