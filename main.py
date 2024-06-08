@@ -16,7 +16,7 @@ class PixelMap:
         self.players = set()
         self.players_lock = threading.Lock()
         self.canvas_lock = threading.Lock()
-        self.position_locks = {} #slownik
+        self.position_locks = {}
 
         self.canvas = tk.Canvas(master, width=width*pixel_size, height=height*pixel_size)
         self.canvas.pack()
@@ -37,12 +37,9 @@ class PixelMap:
         self.move_player_thread2 = threading.Thread(target=self.start_press_listener2)
         self.move_player_thread1.start()
         self.move_player_thread2.start()
-        self.move_player(self.human_player1[0], self.human_player1[1], -1)
-        self.move_player(self.human_player2[0], self.human_player2[1], -1)
 
-        # self.ai_player = [rnd.randint(3, self.width-4), rnd.randint(3, self.height-4)]
-        # self.move_ai_thread = threading.Thread(target=self.move_ai)
-        # self.move_ai_thread.start()
+        self.display_player(self.human_player1, "red")
+        self.display_player(self.human_player2, "blue")
 
     def draw_map(self):
         for i in range(self.width):
@@ -62,30 +59,30 @@ class PixelMap:
                 self.position_locks[f"{i}_{j}"] = threading.Lock()
 
     def spawn_treasure(self):
-            if self.treasure_position:
-                x, y = self.treasure_position
-                self.canvas.create_rectangle(
-                    x*self.pixel_size,
-                    y*self.pixel_size,
-                    (x+1)*self.pixel_size,
-                    (y+1)*self.pixel_size,
-                    fill="grey"
-                )
-            while True:
-                x = rnd.randint(1, self.width-1)
-                y = rnd.randint(1, self.height-1)
-                new_position = f"{x}_{y}"
-                if self.map[x][y] == 'F' and new_position not in self.players:
-                    break
-
-            self.treasure_position = [x, y]
+        if self.treasure_position:
+            x, y = self.treasure_position
             self.canvas.create_rectangle(
                 x*self.pixel_size,
                 y*self.pixel_size,
                 (x+1)*self.pixel_size,
                 (y+1)*self.pixel_size,
-                fill="yellow"
+                fill="grey"
             )
+        while True:
+            x = rnd.randint(1, self.width-1)
+            y = rnd.randint(1, self.height-1)
+            new_position = f"{x}_{y}"
+            if self.map[x][y] == 'F' and new_position not in self.players:
+                break
+
+        self.treasure_position = [x, y]
+        self.canvas.create_rectangle(
+            x*self.pixel_size,
+            y*self.pixel_size,
+            (x+1)*self.pixel_size,
+            (y+1)*self.pixel_size,
+            fill="yellow"
+        )
 
     def move_player(self, x, y, direction):
         new_position = [x, y]
@@ -101,8 +98,6 @@ class PixelMap:
         elif direction == 3 and x > 1:
             new_position[0] -= 1
 
-        if self.treasure_position[0] == new_position[0] and self.treasure_position[1] == new_position[1]:
-            return [x, y]
         if self.treasure_position[0] == new_position[0] and self.treasure_position[1] == new_position[1]:
             return [x, y]
 
@@ -121,12 +116,11 @@ class PixelMap:
                             (y+1)*self.pixel_size,
                             fill="grey"
                         )
+                        color = "green"
                         if [x, y] == self.human_player1:
                             color = "red"
                         elif [x, y] == self.human_player2:
                             color = "blue"
-                        else:
-                            color = "green"
                         self.canvas.create_rectangle(
                             new_position[0]*self.pixel_size,
                             new_position[1]*self.pixel_size,
@@ -136,6 +130,17 @@ class PixelMap:
                         )
                     return new_position
         return [x, y]
+
+    def display_player(self, position, color):
+        x, y = position
+        self.canvas.create_rectangle(
+            x*self.pixel_size,
+            y*self.pixel_size,
+            (x+1)*self.pixel_size,
+            (y+1)*self.pixel_size,
+            fill=color
+        )
+        self.players.add(f"{x}_{y}")
 
     def on_press1(self, event):
         if self.human_player1_picking:
@@ -209,18 +214,11 @@ class PixelMap:
             elif player_id == 2:
                 self.human_player2_picking = False
             self.spawn_treasure()
-    
-    def move_ai(self):
-        while self.isRunning:
-            direction = rnd.randint(0, 3)
-            self.ai_player = self.move_player(self.ai_player[0], self.ai_player[1], direction)
-            time.sleep(0.5)
 
     def close(self):
         self.isRunning = False
         self.move_player_thread1.join()
         self.move_player_thread2.join()
-        #self.move_ai_thread.join()
 
 def read_map(filename):
     try:
@@ -234,7 +232,7 @@ def read_map(filename):
     except FileNotFoundError:
         print("Nie znaleziono pliku o podanej nazwie.")
         return None
-    
+
 def on_closing(map):
     map.close()
     exit()
