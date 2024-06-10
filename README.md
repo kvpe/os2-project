@@ -52,21 +52,21 @@ Treasures are colored yellow, player one is red, and player two is blue.
 ## Player 1:
 
 ```
-*Up*: Up Arrow
-*Down*: Down Arrow
-*Left*: Left Arrow
-*Right*: Right Arrow
-*Pick up treasure*: Space
+- **Up**: Up Arrow
+- **Down**: Down Arrow
+- **Left**: Left Arrow
+- **Right**: Right Arrow
+- **Pick up treasure**: Space
 ```
 
 ## Player 2:
 
 ```
-*Up*: W
-*Down*: S
-*Left*: A
-*Right*: D
-*Pick up treasure*: Enter
+- **Up**: W
+- **Down**: S
+- **Left**: A
+- **Right**: D
+- **Pick up treasure**: Enter
 ```
 
 Players navigate the map, searching the treasures. Player can only pick up the treasure when he is on a tile adjacent to treasure.
@@ -84,30 +84,24 @@ When a treasure is being picked up by a player, other players cannot pick it up.
 We used 3 different threads in order for the game to be able to be played by two players, who can pick up treasures
 
 ```
-*move_player_thread1*: Handles the movement and actions of Player 1.
-*move_player_thread2*: Handles the movement and actions of Player 2.
-*pickup_treasure*: Manages the treasure pickup process and cooldown period.
+- **move_player_thread1**: Handles the movement and actions of Player 1.
+- **move_player_thread2**: Handles the movement and actions of Player 2.
+- **pickup_treasure**: Manages the treasure pickup process and cooldown period.
 ```
 
 ## Critical Sections
 
 ```
-*self.players_lock* - Mutex lock that protects the self.players set which keeps track of player positions.
+- **self.players_lock** - Mutex lock that protects the self.players set which keeps track of player positions.
 This ensures that only one thread can add or remove player positions from the set at a time.
-```
 
-```
-*self.canvas_lock* - Mutex lock that ensures thread-safe operations on the Tkinter canvas.
+- **self.canvas_lock** - Mutex lock that ensures thread-safe operations on the Tkinter canvas.
 Since Tkinter is not thread-safe, any updates to the canvas are protected by this lock.
-```
 
-```
-*self.position_locks* - A dictionary of mutex locks for each map position to manage concurrent access.
+- **self.position_locks** - A dictionary of mutex locks for each map position to manage concurrent access.
 Each position on the map has its own lock to ensure that no two players can move to the same position simultaneously.
-```
 
-```
-*self.treasure_lock* - Mutex lock that manages access to the treasure position,
+- **self.treasure_lock** - Mutex lock that manages access to the treasure position,
 ensuring it can only be altered by one thread at a time. This lock prevents race conditions when
 checking and updating the treasure's position.
 ```
