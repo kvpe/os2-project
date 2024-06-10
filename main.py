@@ -12,6 +12,7 @@ class PixelMap:
         self.map = map
 
         self.isRunning = True
+        self.cooldown_threads = []
 
         self.players = set()
         self.players_lock = threading.Lock()
@@ -54,6 +55,7 @@ class PixelMap:
         self.display_player(self.human_player2, "blue")
 
     def draw_map(self):
+        # Drawing the map
         for i in range(self.width):
             for j in range(self.height):
                 if self.map[i][j] == 'W':
@@ -71,6 +73,7 @@ class PixelMap:
                 self.position_locks[f"{i}_{j}"] = threading.Lock()
 
     def spawn_treasure(self):
+        # Randomly placing a treasure on the map
         if self.treasure_position:
             x, y = self.treasure_position
             self.canvas.create_rectangle(
@@ -97,6 +100,7 @@ class PixelMap:
         )
 
     def move_player(self, x, y, direction):
+        # Handling player movement
         new_position = [x, y]
         if direction == -1:
             return [x, y]
@@ -147,6 +151,7 @@ class PixelMap:
         return [x, y]
 
     def display_player(self, position, color):
+        # Displaying player on the map
         x, y = position
         self.canvas.create_rectangle(
             x*self.pixel_size,
@@ -158,10 +163,16 @@ class PixelMap:
         self.players.add(f"{x}_{y}")
 
     def update_score(self):
+        # Update the scoreboard and check for game end condition
         self.player1_label.config(text=f"Player 1: {self.player1_score}")
         self.player2_label.config(text=f"Player 2: {self.player2_score}")
+        if self.player1_score >= 5:
+            self.end_game(winner="Player 1")
+        elif self.player2_score >= 5:
+            self.end_game(winner="Player 2")
 
     def on_press1(self, event):
+        # Handling key press events for player 1
         if self.human_player1_picking:
             return
         try:
@@ -181,6 +192,7 @@ class PixelMap:
             pass
 
     def on_press2(self, event):
+        # Handling key press events for player 2
         if self.human_player2_picking:
             return
         try:
@@ -200,6 +212,7 @@ class PixelMap:
             pass
 
     def start_press_listener1(self):
+        # Start key press listeners for player 1
         self.master.bind("<Up>", self.on_press1)
         self.master.bind("<Down>", self.on_press1)
         self.master.bind("<Left>", self.on_press1)
@@ -207,6 +220,7 @@ class PixelMap:
         self.master.bind("<space>", self.on_press1)
 
     def start_press_listener2(self):
+        # Start key press listeners for player 2
         self.master.bind("<w>", self.on_press2)
         self.master.bind("<s>", self.on_press2)
         self.master.bind("<a>", self.on_press2)
@@ -214,6 +228,7 @@ class PixelMap:
         self.master.bind("<Return>", self.on_press2)
 
     def attempt_pickup_treasure(self, player_position, player_id):
+        # Attempt to pick up a treasure if the player is close enough
         with self.treasure_lock:
             if self.treasure_position:
                 tx, ty = self.treasure_position
@@ -226,25 +241,43 @@ class PixelMap:
                         self.human_player2_picking = True
                         self.player2_score += 1
                     self.update_score()
-                    threading.Thread(target=self.pickup_treasure, args=(player_id,)).start()
+                    cooldown_thread = threading.Thread(target=self.pickup_treasure, args=(player_id,))
+                    self.cooldown_threads.append(cooldown_thread)
+                    cooldown_thread.start()
 
     def pickup_treasure(self, player_id):
+        # Handling the treasure pickup with a cooldown period
         with self.treasure_lock:
             time.sleep(3)  # 3 seconds cooldown
-            if player_id == 1:
-                self.human_player1_picking = False
-            elif player_id == 2:
-                self.human_player2_picking = False
-            self.spawn_treasure()
+            if self.isRunning:
+                if player_id == 1:
+                    self.human_player1_picking = False
+                elif player_id == 2:
+                    self.human_player2_picking = False
+                self.spawn_treasure()
 
-    
+    def end_game(self, winner):
+        # Ending the game
+        self.isRunning = False
+        self.canvas.delete("all")
+        self.canvas.create_text(self.width*self.pixel_size//2, self.height*self.pixel_size//2,
+                                text=f"{winner} wins!", font=('Helvetica', 24), fill="green")
+        self.master.after(2000, self.close)  # Close the window after 2 seconds
 
     def close(self):
+        # Joining threads and closing the application
         self.isRunning = False
+
         self.move_player_thread1.join()
         self.move_player_thread2.join()
 
+        for thread in self.cooldown_threads:
+            thread.join()
+            
+        self.master.destroy()
+
 def read_map(filename):
+    # Read the map from a file
     try:
         with open(filename, 'r') as file:
             lines = file.readlines()
@@ -258,6 +291,7 @@ def read_map(filename):
         return None
 
 def on_closing(map):
+    # Handling window closing
     map.close()
     exit()
 
