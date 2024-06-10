@@ -1,7 +1,7 @@
 # Treasure Hunting Game
 
 Project done for Operating Systems 2 course.
-The goal of the project is to create an application with GUI, that incorporates threading.
+The goal of the project was to create an application with GUI, that incorporates threading.
 
 ## Concept Image:
 
@@ -9,7 +9,7 @@ The goal of the project is to create an application with GUI, that incorporates 
 
 ## Project Description
 
-The Treasure Hunting Game involves two human players navigating a grid-based map to collect randomly spawned treasures. The players move using keyboard controls and compete to see who can collect the most treasures within the game session. The game includes a simple graphical interface, a scoreboard, and utilizes threading to handle concurrent player actions and treasure management. This project is a graphical game implemented in Python using the Tkinter library. The game features a pixel map where two human players can move around and compete to collect treasures.
+The Treasure Hunting Game involves two human players navigating a grid-based map to collect randomly spawned treasures. The players move using keyboard controls and compete to see who can collect the most treasures within the game session. The game includes a simple graphical interface, a scoreboard, and utilizes threading to handle concurrent player actions and treasure management. This project is a graphical game implemented in Python using the Tkinter library.
 
 ## Installation and running
 
@@ -65,11 +65,11 @@ Treasures are colored yellow, player one is red, and player two is blue.
 - **Right**: D
 - **Pick up treasure**: Enter
 
-Players navigate the map, searching the treasures. Player can only pick up the treasure when he is on a tile adjacent to treasure.
+Players navigate the map, searching for treasures. Player is able to pick up the treasure only when he is on a tile adjacent to treasure.
 
-Players cannot walk into tiles occupied by other players, and treasures.
+Players cannot walk into tiles occupied by other players or treasures.
 
-Action of picking up the treasure takes 5 seconds.
+Picking up the treasure takes 3 seconds.
 
 When a treasure is being picked up by a player, the player that is picking up the treasure cannot perform any other actions.
 
@@ -109,8 +109,8 @@ self.move_player_thread2 = threading.Thread(target=self.start_press_listener2)
 threading.Thread(target=self.pickup_treasure, args=(player_id,)).start()
 ```
 
-Both player threads start at the beginning. They run continuusly, until the game is stopped.
+Both players' threads start at the beginning. They run continuously, until the game is stopped.
 
-Thread responsible for picking up the treasure is started when the player succeeds an attempt to pick up a treasure.
+Thread responsible for picking up the treasure starts when the player successfully attempted to pick up a treasure.
 
-Its terminated after the player finishes picking the treasure up.
+It's terminated after the player had finished picking the treasure up.
