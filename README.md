@@ -40,8 +40,11 @@ python main.py
 ## Gameplay
 
 Control the players using the keyboard:
+
 Player 1: Arrow keys to move, Space to pick up treasure.
+
 Player 2: WASD keys to move, Enter to pick up treasure.
+
 Treasures are colored yellow, player one is red, and player two is blue.
 
 #### Controls
@@ -67,9 +70,13 @@ Treasures are colored yellow, player one is red, and player two is blue.
 ```
 
 Players navigate the map, searching the treasures. Player can only pick up the treasure when he is on a tile adjacent to treasure.
+
 Players cannot walk into tiles occupied by other players, and treasures.
+
 Action of picking up the treasure takes 5 seconds.
+
 When a treasure is being picked up by a player, the player that is picking up the treasure cannot perform any other actions.
+
 When a treasure is being picked up by a player, other players cannot pick it up.
 
 ## Threads
@@ -85,19 +92,24 @@ We used 3 different threads in order for the game to be able to be played by two
 ## Critical Sections
 
 ```
-*self.players_lock* - Mutex lock that protects the self.players set which keeps track of player positions. This ensures that only one thread can add or remove player positions from the set at a time.
+*self.players_lock* - Mutex lock that protects the self.players set which keeps track of player positions.
+This ensures that only one thread can add or remove player positions from the set at a time.
 ```
 
 ```
-*self.canvas_lock* - Mutex lock that ensures thread-safe operations on the Tkinter canvas. Since Tkinter is not thread-safe, any updates to the canvas are protected by this lock.
+*self.canvas_lock* - Mutex lock that ensures thread-safe operations on the Tkinter canvas.
+Since Tkinter is not thread-safe, any updates to the canvas are protected by this lock.
 ```
 
 ```
-*self.position_locks* - A dictionary of mutex locks for each map position to manage concurrent access. Each position on the map has its own lock to ensure that no two players can move to the same position simultaneously.
+*self.position_locks* - A dictionary of mutex locks for each map position to manage concurrent access.
+Each position on the map has its own lock to ensure that no two players can move to the same position simultaneously.
 ```
 
 ```
-*self.treasure_lock* - Mutex lock that manages access to the treasure position, ensuring it can only be altered by one thread at a time. This lock prevents race conditions when checking and updating the treasure's position.
+*self.treasure_lock* - Mutex lock that manages access to the treasure position,
+ensuring it can only be altered by one thread at a time. This lock prevents race conditions when
+checking and updating the treasure's position.
 ```
 
 ## Listings of thread initialization
@@ -114,4 +126,5 @@ threading.Thread(target=self.pickup_treasure, args=(player_id,)).start()
 Both player threads start at the beginning. They run continuusly, until the game is stopped.
 
 Thread responsible for picking up the treasure is started when the player succeeds an attempt to pick up a treasure.
+
 Its terminated after the player finishes picking the treasure up.
